@@ -1,3 +1,9 @@
+import {
+  EnableDragging,
+  EnableDrop,
+  EnableHover,
+} from '../../decorators/draggable.js';
+import { Draggable, Droppable, Hoverable } from '../common/type.js';
 import { BaseComponent, Component } from '../component.js';
 
 export interface Composable {
@@ -12,7 +18,7 @@ type OnDragStateListener<T extends Component> = (
 ) => void;
 type MuteDnD = 'mute' | 'unmute';
 
-interface SectionContainer extends Component, Composable {
+interface SectionContainer extends Component, Composable, Draggable, Hoverable {
   setOnCloseListener(listener: OnCloseListener): void;
   setOnDragStateListener(listener: OnDragStateListener<SectionContainer>): void;
   muteDnDChildren(state: MuteDnD): void;
@@ -24,6 +30,8 @@ type SecionContainerConstructor = {
   new (): SectionContainer;
 };
 
+@EnableDragging
+@EnableHover
 export class PageItemComponent
   extends BaseComponent<HTMLElement>
   implements SectionContainer
@@ -42,19 +50,6 @@ export class PageItemComponent
     closeBtn.onclick = () => {
       this.closeListener && this.closeListener();
     };
-
-    this.element.addEventListener('dragstart', (event: DragEvent) => {
-      this.onDragStart(event);
-    });
-    this.element.addEventListener('dragend', (event: DragEvent) => {
-      this.onDragEnd(event);
-    });
-    this.element.addEventListener('dragenter', (event: DragEvent) => {
-      this.onDragEnter(event);
-    });
-    this.element.addEventListener('dragleave', (event: DragEvent) => {
-      this.onDragLeave(event);
-    });
   }
 
   onDragStart(_: DragEvent) {
@@ -108,9 +103,10 @@ export class PageItemComponent
   }
 }
 
+@EnableDrop
 export class PageComponent
   extends BaseComponent<HTMLUListElement>
-  implements Composable
+  implements Composable, Composable, Droppable
 {
   private children = new Set<SectionContainer>();
   private dragTarget?: SectionContainer;
@@ -119,22 +115,12 @@ export class PageComponent
   // DI. SectionContainer를 구현하는 어떤 종류의 Container를 생성할 수 있도록
   constructor(private pageItemConstructor: SecionContainerConstructor) {
     super('<ul class="page"></ul>');
-    this.element.addEventListener('dragover', (event: DragEvent) => {
-      this.onDragOver(event);
-    });
-    this.element.addEventListener('drop', (event: DragEvent) => {
-      this.onDrop(event);
-    });
   }
 
-  onDragOver(event: DragEvent) {
-    event.preventDefault();
-    console.log('onDragOver');
-  }
+  onDragOver(_: DragEvent): void {}
+
   onDrop(event: DragEvent) {
-    event.preventDefault();
     if (!this.dropTarget) return;
-    console.log('onDrop');
     if (this.dragTarget && this.dragTarget !== this.dropTarget) {
       const dragY = this.dragTarget.getBoundingRect().y;
       const dropY = event.clientY;
